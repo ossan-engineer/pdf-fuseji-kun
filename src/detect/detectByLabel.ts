@@ -75,9 +75,9 @@ const findLabelHits = (
 ): ReadonlyArray<LabelHit> =>
   lines.flatMap((indices, lineIdx) =>
     indices.flatMap((_, pos) =>
-      rules.flatMap((rule) => {
+      rules.flatMap((rule): ReadonlyArray<LabelHit> => {
         const windows = [1, 2, 3, 4].filter((k) => pos + k <= indices.length);
-        const exact = windows.flatMap((k) => {
+        const exact = windows.flatMap((k): ReadonlyArray<LabelHit> => {
           const windowItems = indices
             .slice(pos, pos + k)
             .map((idx) => texts[idx]);
