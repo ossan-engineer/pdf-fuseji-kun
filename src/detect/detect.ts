@@ -6,7 +6,7 @@ import { detectByRegex } from "./detectByRegex";
 import { buildNormalizedLine, groupIntoLines } from "./lines";
 import { PATTERNS } from "./patterns";
 
-const DEDUPE_IOU_THRESHOLD = 0.7;
+export const DEDUPE_IOU_THRESHOLD = 0.7;
 
 // 重複矩形は先勝ち(ラベル検出を正規表現検出より優先)。AI 検出でも再利用する
 export const dedupeDetections = (

@@ -33,7 +33,7 @@ const detectPage = async (
         pageIndex: page.pageIndex,
         rect: clampRect(d.rect, page.width, page.height),
         category: d.category,
-        // "auto" のままにして既存のトグル・置換・出力ロジックを共用する
+        // "auto" のままにして既存のトグル・マージ・出力ロジックを共用する
         // (由来は id の "ai-" プレフィックスで判別できる)
         source: "auto",
         enabled: true,

@@ -48,8 +48,8 @@ export const App = () => {
     aiAbortRef.current = null;
   }, []);
 
-  // Chrome 内蔵 AI が使える場合のみ、ルールベースの暫定結果を表示したまま
-  // バックグラウンドで AI 検出を実行し、完了次第 auto マスクを置き換える
+  // Chrome 内蔵 AI が使える場合のみ、ルールベースの結果を表示したまま
+  // バックグラウンドで AI 検出を実行し、完了次第マスクをマージ追加する
   const startAiDetection = useCallback(
     (pages: ReadonlyArray<PageData>) => {
       void (async () => {
@@ -170,14 +170,14 @@ export const App = () => {
             </p>
           ))}
           {state.aiStatus === "detecting" && (
-            <p className="app__ai-status">
+            <p className="app__ai-status app__ai-status--detecting">
               Chrome 内蔵 AI
-              で個人情報を検出中…(完了すると自動検出マスクが置き換わります)
+              で個人情報を検出中…(検出されたマスクは自動で追加されます)
             </p>
           )}
           {state.aiStatus === "done" && (
             <p className="app__ai-status">
-              Chrome 内蔵 AI の検出結果を適用しました。
+              Chrome 内蔵 AI の検出結果を追加しました。
             </p>
           )}
           {state.errorMessage !== null && (

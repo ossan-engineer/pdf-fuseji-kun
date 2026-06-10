@@ -1,4 +1,6 @@
+import { DEDUPE_IOU_THRESHOLD } from "../detect/detect";
 import type { AppState, MaskRegion, PageData } from "../types";
+import { iou } from "../utils/geometry";
 
 export type AppAction =
   | Readonly<{ type: "LOAD_START"; fileName: string }>
@@ -84,18 +86,25 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, status: "ready", errorMessage: action.message };
     case "AI_DETECT_START":
       return { ...state, aiStatus: "detecting" };
-    case "AI_DETECT_SUCCESS":
-      // AI 結果で自動検出(source: "auto")を全置換する。暫定マスクへの
-      // ON/OFF 操作は新旧矩形の対応付けが曖昧なため引き継がない。
-      // 手動マスクはユーザーの明示操作なので必ず残す。
+    case "AI_DETECT_SUCCESS": {
+      // AI 結果は既存マスクへ「追加」する(置換しない)。AI は email 等の
+      // 確実なパターンでも確率的に取りこぼすことがあるため、ルールベースの
+      // 検出結果とユーザーの ON/OFF 操作を保持し、同一ページで既存マスクと
+      // 重ならない AI マスクのみを足す
+      const fresh = action.masks.filter(
+        (ai) =>
+          !state.masks.some(
+            (m) =>
+              m.pageIndex === ai.pageIndex &&
+              iou(m.rect, ai.rect) > DEDUPE_IOU_THRESHOLD,
+          ),
+      );
       return {
         ...state,
         aiStatus: "done",
-        masks: [
-          ...state.masks.filter((m) => m.source === "manual"),
-          ...action.masks,
-        ],
+        masks: [...state.masks, ...fresh],
       };
+    }
     case "AI_DETECT_ERROR":
       // ルールベースの暫定マスクをそのまま維持する(サイレントフォールバック)
       return { ...state, aiStatus: "error" };

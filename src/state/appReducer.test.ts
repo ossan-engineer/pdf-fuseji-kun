@@ -73,21 +73,38 @@ describe("appReducer", () => {
     expect(next.masks).toEqual(readyState.masks);
   });
 
-  it("AI_DETECT_SUCCESS は auto マスクを置換し manual マスクを保持する", () => {
+  it("AI_DETECT_SUCCESS は既存マスクを保持し、重複しない AI マスクのみ追加する", () => {
     const state: AppState = {
       ...readyState,
       aiStatus: "detecting",
       masks: [
-        mask("auto-0-0", false, "auto"), // OFF にした暫定マスクも置換される
+        mask("auto-0-0", false, "auto"), // OFF 操作した暫定マスクも保持される
         mask("manual-1", true, "manual"),
       ],
     };
     const next = appReducer(state, {
       type: "AI_DETECT_SUCCESS",
-      masks: [mask("ai-0-0", true, "auto")],
+      masks: [
+        // 既存 auto-0-0 と同一矩形・同一ページ → 重複として捨てる
+        mask("ai-0-0", true, "auto"),
+        // 重ならない矩形 → 追加される
+        {
+          ...mask("ai-0-1", true, "auto"),
+          rect: { x: 100, y: 100, width: 10, height: 10 },
+        },
+        // 同一矩形でも別ページなら重複ではない → 追加される
+        { ...mask("ai-1-0", true, "auto"), pageIndex: 1 },
+      ],
     });
     expect(next.aiStatus).toBe("done");
-    expect(next.masks.map((m) => m.id)).toEqual(["manual-1", "ai-0-0"]);
+    expect(next.masks.map((m) => m.id)).toEqual([
+      "auto-0-0",
+      "manual-1",
+      "ai-0-1",
+      "ai-1-0",
+    ]);
+    // OFF 操作が引き継がれている
+    expect(next.masks.find((m) => m.id === "auto-0-0")?.enabled).toBe(false);
   });
 
   it("AI_DETECT_ERROR はマスクを変更せず aiStatus のみ更新する", () => {
