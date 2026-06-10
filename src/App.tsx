@@ -121,8 +121,6 @@ export const App = () => {
             enabledCount={state.masks.filter((m) => m.enabled).length}
             generating={state.status === "generating"}
             exportScale={state.exportScale}
-            selectionMode={selectionMode}
-            onToggleSelectionMode={() => setSelectionMode((on) => !on)}
             dispatch={dispatch}
             onDownload={handleDownload}
             onReset={handleReset}
@@ -136,8 +134,8 @@ export const App = () => {
             <p className="app__error">{state.errorMessage}</p>
           )}
           <p className="app__hint">
-            黒塗り箇所のクリックで有効/解除を切り替え、空白部分のドラッグで任意の領域(顔写真など)をマスクできます。タッチ端末では「範囲選択
-            ON」にすると指ドラッグで選択できます。
+            黒塗り箇所のクリックで有効/解除を切り替え、空白部分のドラッグで任意の領域(顔写真など)をマスクできます。タッチ端末では、マスクしたい場所までスクロールしてから右下の「範囲選択」を
+            ON にすると指ドラッグで選択できます。
           </p>
           <div className="app__workspace">
             <main className="app__pages">
@@ -158,6 +156,16 @@ export const App = () => {
               <DetectionList masks={state.masks} dispatch={dispatch} />
             </aside>
           </div>
+          {/* タッチ端末用の範囲選択トグル。スクロール位置に関係なく届くよう
+              右下に固定表示(タッチ入力のない環境では CSS で非表示) */}
+          <button
+            type="button"
+            className={`selection-fab${selectionMode ? " selection-fab--on" : ""}`}
+            aria-pressed={selectionMode}
+            onClick={() => setSelectionMode((on) => !on)}
+          >
+            範囲選択 {selectionMode ? "ON" : "OFF"}
+          </button>
         </>
       )}
       <footer className="app__footer">
