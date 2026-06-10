@@ -17,7 +17,9 @@ const toErrorMessage = (e: unknown): string => {
   if (e instanceof Error && e.name === "InvalidPDFException") {
     return "PDF として読み込めないファイルです。";
   }
-  return "PDF の処理中にエラーが発生しました。";
+  // 原因調査ができるよう詳細を残す(個人情報は含まれない)
+  const detail = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+  return `PDF の処理中にエラーが発生しました。(詳細: ${detail})`;
 };
 
 export const App = () => {
@@ -55,6 +57,7 @@ export const App = () => {
         ];
         dispatch({ type: "LOAD_SUCCESS", pages: loaded.pages, masks, warnings });
       } catch (e) {
+        console.error("PDF読み込みエラー:", e);
         replaceDoc(null);
         dispatch({ type: "LOAD_ERROR", message: toErrorMessage(e) });
       }
