@@ -22,45 +22,53 @@ const toErrorMessage = (e: unknown): string => {
 
 export const App = () => {
   const [state, dispatch] = useReducer(appReducer, initialState);
+  // 描画用は state、イベントハンドラからの破棄・参照用は ref(render 中に ref は読まない)
+  const [doc, setDoc] = useState<PDFDocumentProxy | null>(null);
   const docRef = useRef<PDFDocumentProxy | null>(null);
-  // docRef と描画の同期を取るためのバージョン値(RESET / 再読込で更新)
-  const [docVersion, setDocVersion] = useState(0);
 
-  const handleFile = useCallback(async (file: File) => {
-    dispatch({ type: "LOAD_START", fileName: file.name });
-    try {
-      await docRef.current?.destroy();
-      docRef.current = null;
-      const { doc, pages } = await loadPdf(file);
-      docRef.current = doc;
-      setDocVersion((v) => v + 1);
-      const masks = detectAll(pages);
-      const hasText = pages.some((p) => p.texts.length > 0);
-      const warnings = [
-        ...(hasText
-          ? []
-          : [
-              "テキストを抽出できませんでした(スキャン画像の PDF の可能性があります)。自動検出は使えないため、プレビューをドラッグして手動でマスクしてください。",
-            ]),
-        ...(hasText && masks.length === 0
-          ? [
-              "個人情報を自動検出できませんでした。プレビューをドラッグして手動でマスクを追加してください。",
-            ]
-          : []),
-      ];
-      dispatch({ type: "LOAD_SUCCESS", pages, masks, warnings });
-    } catch (e) {
-      dispatch({ type: "LOAD_ERROR", message: toErrorMessage(e) });
-    }
+  const replaceDoc = useCallback((next: PDFDocumentProxy | null) => {
+    const prev = docRef.current;
+    docRef.current = next;
+    setDoc(next);
+    prev?.loadingTask.destroy().catch(() => undefined);
   }, []);
 
+  const handleFile = useCallback(
+    async (file: File) => {
+      dispatch({ type: "LOAD_START", fileName: file.name });
+      try {
+        const loaded = await loadPdf(file);
+        replaceDoc(loaded.doc);
+        const masks = detectAll(loaded.pages);
+        const hasText = loaded.pages.some((p) => p.texts.length > 0);
+        const warnings = [
+          ...(hasText
+            ? []
+            : [
+                "テキストを抽出できませんでした(スキャン画像の PDF の可能性があります)。自動検出は使えないため、プレビューをドラッグして手動でマスクしてください。",
+              ]),
+          ...(hasText && masks.length === 0
+            ? [
+                "個人情報を自動検出できませんでした。プレビューをドラッグして手動でマスクを追加してください。",
+              ]
+            : []),
+        ];
+        dispatch({ type: "LOAD_SUCCESS", pages: loaded.pages, masks, warnings });
+      } catch (e) {
+        replaceDoc(null);
+        dispatch({ type: "LOAD_ERROR", message: toErrorMessage(e) });
+      }
+    },
+    [replaceDoc],
+  );
+
   const handleDownload = useCallback(async () => {
-    const doc = docRef.current;
-    if (doc === null) return;
+    const currentDoc = docRef.current;
+    if (currentDoc === null) return;
     dispatch({ type: "GENERATE_START" });
     try {
       const blob = await generateMaskedPdf(
-        doc,
+        currentDoc,
         state.pages,
         state.masks,
         state.exportScale,
@@ -77,13 +85,10 @@ export const App = () => {
   }, [state.pages, state.masks, state.exportScale, state.fileName]);
 
   const handleReset = useCallback(() => {
-    docRef.current?.destroy().catch(() => undefined);
-    docRef.current = null;
-    setDocVersion((v) => v + 1);
+    replaceDoc(null);
     dispatch({ type: "RESET" });
-  }, []);
+  }, [replaceDoc]);
 
-  const doc = docRef.current;
   const showWorkspace =
     doc !== null && (state.status === "ready" || state.status === "generating");
 
@@ -128,7 +133,7 @@ export const App = () => {
             <main className="app__pages">
               {state.pages.map((page) => (
                 <PageView
-                  key={`${docVersion}-${page.pageIndex}`}
+                  key={page.pageIndex}
                   doc={doc}
                   page={page}
                   masks={state.masks.filter(
