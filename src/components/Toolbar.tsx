@@ -6,6 +6,8 @@ type Props = Readonly<{
   enabledCount: number;
   generating: boolean;
   exportScale: number;
+  selectionMode: boolean;
+  onToggleSelectionMode: () => void;
   dispatch: Dispatch<AppAction>;
   onDownload: () => void;
   onReset: () => void;
@@ -16,6 +18,8 @@ export const Toolbar = ({
   enabledCount,
   generating,
   exportScale,
+  selectionMode,
+  onToggleSelectionMode,
   dispatch,
   onDownload,
   onReset,
@@ -26,6 +30,15 @@ export const Toolbar = ({
     </span>
     <span className="toolbar__count">黒塗り {enabledCount} 箇所</span>
     <div className="toolbar__actions">
+      <button
+        type="button"
+        className={`toolbar__selection${selectionMode ? " toolbar__selection--on" : ""}`}
+        aria-pressed={selectionMode}
+        onClick={onToggleSelectionMode}
+        title="タッチ端末で指ドラッグによる範囲選択を有効化します(OFF の間はスクロール優先)"
+      >
+        範囲選択 {selectionMode ? "ON" : "OFF"}
+      </button>
       <button
         type="button"
         onClick={() => dispatch({ type: "SET_ALL_ENABLED", enabled: true })}

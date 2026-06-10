@@ -16,11 +16,18 @@ type Props = Readonly<{
   page: PageData;
   masks: ReadonlyArray<MaskRegion>;
   dispatch: Dispatch<AppAction>;
+  selectionMode: boolean;
 }>;
 
 const MAX_DPR = 3;
 
-export const PageView = ({ doc, page, masks, dispatch }: Props) => {
+export const PageView = ({
+  doc,
+  page,
+  masks,
+  dispatch,
+  selectionMode,
+}: Props) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [displayWidth, setDisplayWidth] = useState(0);
@@ -60,7 +67,12 @@ export const PageView = ({ doc, page, masks, dispatch }: Props) => {
       style={{ aspectRatio: `${page.width} / ${page.height}` }}
     >
       <canvas ref={canvasRef} className="page-view__canvas" />
-      <MaskOverlay page={page} masks={masks} dispatch={dispatch} />
+      <MaskOverlay
+        page={page}
+        masks={masks}
+        dispatch={dispatch}
+        selectionMode={selectionMode}
+      />
     </div>
   );
 };

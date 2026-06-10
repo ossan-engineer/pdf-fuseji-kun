@@ -154,6 +154,16 @@ button:disabled {
   cursor: default;
 }
 
+.toolbar__selection--on {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #ffffff;
+}
+
+.toolbar__selection--on:hover {
+  background: #1e40af;
+}
+
 .toolbar__download {
   background: #1d4ed8;
   border-color: #1d4ed8;
@@ -239,12 +249,12 @@ button:disabled {
 }
 
 /* --- MaskOverlay --- */
+/* touch-action は選択モードに応じてインラインで切り替える */
 .mask-overlay {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  touch-action: none;
   cursor: crosshair;
 }
 

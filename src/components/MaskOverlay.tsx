@@ -7,6 +7,9 @@ type Props = Readonly<{
   page: PageData;
   masks: ReadonlyArray<MaskRegion>;
   dispatch: Dispatch<AppAction>;
+  // タッチ端末ではスクロールと範囲選択が同じジェスチャのため、
+  // ON のときだけタッチドラッグをマスク作成に割り当てる(マウスは常時可)
+  selectionMode: boolean;
 }>;
 
 type Draft = Readonly<{
@@ -19,7 +22,12 @@ type Draft = Readonly<{
 // これ未満のドラッグは誤操作とみなして無視(pt)
 const MIN_DRAG_SIZE = 6;
 
-export const MaskOverlay = ({ page, masks, dispatch }: Props) => {
+export const MaskOverlay = ({
+  page,
+  masks,
+  dispatch,
+  selectionMode,
+}: Props) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
 
@@ -35,6 +43,8 @@ export const MaskOverlay = ({ page, masks, dispatch }: Props) => {
   };
 
   const handlePointerDown = (e: PointerEvent<SVGSVGElement>) => {
+    // タッチ/ペンは選択モード中のみ範囲選択(OFF 時はスクロールに譲る)
+    if (e.pointerType !== "mouse" && !selectionMode) return;
     // 既存マスク上はクリックトグルに譲る(ドラッグ開始は背景のみ)
     if (e.target !== e.currentTarget) return;
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -84,6 +94,9 @@ export const MaskOverlay = ({ page, masks, dispatch }: Props) => {
       className="mask-overlay"
       viewBox={`0 0 ${page.width} ${page.height}`}
       preserveAspectRatio="none"
+      style={{
+        touchAction: selectionMode ? "none" : "pan-x pan-y pinch-zoom",
+      }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}

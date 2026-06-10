@@ -27,6 +27,8 @@ export const App = () => {
   // 描画用は state、イベントハンドラからの破棄・参照用は ref(render 中に ref は読まない)
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null);
   const docRef = useRef<PDFDocumentProxy | null>(null);
+  // タッチ端末用: ON の間だけ指ドラッグが範囲選択になる(OFF はスクロール優先)
+  const [selectionMode, setSelectionMode] = useState(false);
 
   const replaceDoc = useCallback((next: PDFDocumentProxy | null) => {
     const prev = docRef.current;
@@ -119,6 +121,8 @@ export const App = () => {
             enabledCount={state.masks.filter((m) => m.enabled).length}
             generating={state.status === "generating"}
             exportScale={state.exportScale}
+            selectionMode={selectionMode}
+            onToggleSelectionMode={() => setSelectionMode((on) => !on)}
             dispatch={dispatch}
             onDownload={handleDownload}
             onReset={handleReset}
@@ -132,7 +136,8 @@ export const App = () => {
             <p className="app__error">{state.errorMessage}</p>
           )}
           <p className="app__hint">
-            黒塗り箇所のクリックで有効/解除を切り替え、空白部分のドラッグで任意の領域(顔写真など)をマスクできます。
+            黒塗り箇所のクリックで有効/解除を切り替え、空白部分のドラッグで任意の領域(顔写真など)をマスクできます。タッチ端末では「範囲選択
+            ON」にすると指ドラッグで選択できます。
           </p>
           <div className="app__workspace">
             <main className="app__pages">
@@ -145,6 +150,7 @@ export const App = () => {
                     (m) => m.pageIndex === page.pageIndex,
                   )}
                   dispatch={dispatch}
+                  selectionMode={selectionMode}
                 />
               ))}
             </main>
