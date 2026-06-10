@@ -98,7 +98,9 @@ export const App = () => {
   return (
     <div className="app">
       <header className="app__header">
-        <h1>PDF伏せ字くん</h1>
+        <h1>
+          PDF伏せ字くん <span className="app__version">v{__APP_VERSION__}</span>
+        </h1>
         <p>
           履歴書・職務経歴書の個人情報を検出して黒塗りした PDF
           を作成します。処理はすべてブラウザ内で完結し、ファイルが外部に送信されることはありません。

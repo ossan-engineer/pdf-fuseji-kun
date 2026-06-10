@@ -29,6 +29,12 @@ body {
   font-size: 1.6rem;
 }
 
+.app__version {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #7b8794;
+}
+
 .app__header p {
   margin: 0 0 24px;
   color: #52606d;
