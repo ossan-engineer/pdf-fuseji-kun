@@ -176,7 +176,10 @@ button:disabled {
   }
 }
 
-.selection-fab--on {
+/* タッチ端末はタップ後も :hover が残るため、共通の button:hover
+   (薄背景)に負けて白文字が消えないよう ON 時の hover を明示する */
+.selection-fab--on,
+.selection-fab--on:hover {
   background: #1d4ed8;
   border-color: #1d4ed8;
   color: #ffffff;
