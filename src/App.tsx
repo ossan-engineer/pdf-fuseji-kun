@@ -1,10 +1,13 @@
 import { useCallback, useReducer, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
+import type { PageData } from "./types";
 import { DetectionList } from "./components/DetectionList";
 import { DropZone } from "./components/DropZone";
 import { PageView } from "./components/PageView";
 import { Toolbar } from "./components/Toolbar";
+import { isAiDetectionAvailable } from "./detect/aiAvailability";
 import { detectAll } from "./detect/detect";
+import { detectByAi } from "./detect/detectByAi";
 import { generateMaskedPdf } from "./pdf/generateMaskedPdf";
 import { loadPdf } from "./pdf/loadPdf";
 import { appReducer, initialState } from "./state/appReducer";
@@ -37,8 +40,40 @@ export const App = () => {
     prev?.loadingTask.destroy().catch(() => undefined);
   }, []);
 
+  // AI 検出はバックグラウンドで走るため、リセットや別ファイル読み込み時に
+  // 古い結果が新しい state を汚染しないよう AbortController で打ち切る
+  const aiAbortRef = useRef<AbortController | null>(null);
+  const abortAiDetection = useCallback(() => {
+    aiAbortRef.current?.abort();
+    aiAbortRef.current = null;
+  }, []);
+
+  // Chrome 内蔵 AI が使える場合のみ、ルールベースの結果を表示したまま
+  // バックグラウンドで AI 検出を実行し、完了次第マスクをマージ追加する
+  const startAiDetection = useCallback(
+    (pages: ReadonlyArray<PageData>) => {
+      void (async () => {
+        if (!(await isAiDetectionAvailable())) return; // サイレントフォールバック
+        const controller = new AbortController();
+        aiAbortRef.current = controller;
+        dispatch({ type: "AI_DETECT_START" });
+        try {
+          const aiMasks = await detectByAi(pages, controller.signal);
+          if (controller.signal.aborted) return; // 古い結果は捨てる
+          dispatch({ type: "AI_DETECT_SUCCESS", masks: aiMasks });
+        } catch (e) {
+          if (controller.signal.aborted) return;
+          console.warn("AI検出エラー(ルールベース結果を維持):", e);
+          dispatch({ type: "AI_DETECT_ERROR" });
+        }
+      })();
+    },
+    [],
+  );
+
   const handleFile = useCallback(
     async (file: File) => {
+      abortAiDetection();
       dispatch({ type: "LOAD_START", fileName: file.name });
       try {
         const loaded = await loadPdf(file);
@@ -58,13 +93,16 @@ export const App = () => {
             : []),
         ];
         dispatch({ type: "LOAD_SUCCESS", pages: loaded.pages, masks, warnings });
+        if (hasText) {
+          startAiDetection(loaded.pages);
+        }
       } catch (e) {
         console.error("PDF読み込みエラー:", e);
         replaceDoc(null);
         dispatch({ type: "LOAD_ERROR", message: toErrorMessage(e) });
       }
     },
-    [replaceDoc],
+    [replaceDoc, abortAiDetection, startAiDetection],
   );
 
   const handleDownload = useCallback(async () => {
@@ -90,9 +128,10 @@ export const App = () => {
   }, [state.pages, state.masks, state.exportScale, state.fileName]);
 
   const handleReset = useCallback(() => {
+    abortAiDetection();
     replaceDoc(null);
     dispatch({ type: "RESET" });
-  }, [replaceDoc]);
+  }, [replaceDoc, abortAiDetection]);
 
   const showWorkspace =
     doc !== null && (state.status === "ready" || state.status === "generating");
@@ -130,6 +169,17 @@ export const App = () => {
               {warning}
             </p>
           ))}
+          {state.aiStatus === "detecting" && (
+            <p className="app__ai-status app__ai-status--detecting">
+              Chrome 内蔵 AI
+              で個人情報を検出中…(検出されたマスクは自動で追加されます)
+            </p>
+          )}
+          {state.aiStatus === "done" && (
+            <p className="app__ai-status">
+              Chrome 内蔵 AI の検出結果を追加しました。
+            </p>
+          )}
           {state.errorMessage !== null && (
             <p className="app__error">{state.errorMessage}</p>
           )}

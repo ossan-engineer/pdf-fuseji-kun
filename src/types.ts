@@ -45,6 +45,10 @@ export type MaskRegion = Readonly<{
 
 export type AppStatus = "idle" | "loading" | "ready" | "generating" | "error";
 
+// Chrome 内蔵 AI(Prompt API)によるバックグラウンド検出の進行状態。
+// "error" でもルールベースの暫定マスクが残るため UI 上はエラー表示しない。
+export type AiDetectionStatus = "idle" | "detecting" | "done" | "error";
+
 export type AppState = Readonly<{
   status: AppStatus;
   fileName: string | null;
@@ -53,6 +57,7 @@ export type AppState = Readonly<{
   exportScale: number;
   errorMessage: string | null;
   warnings: ReadonlyArray<string>;
+  aiStatus: AiDetectionStatus;
 }>;
 
 export const CATEGORY_LABELS: Readonly<Record<PiiCategory, string>> = {

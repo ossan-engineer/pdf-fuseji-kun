@@ -2,12 +2,16 @@ import { describe, expect, it } from "vitest";
 import type { AppState, MaskRegion } from "../types";
 import { appReducer, initialState } from "./appReducer";
 
-const mask = (id: string, enabled = true): MaskRegion => ({
+const mask = (
+  id: string,
+  enabled = true,
+  source: MaskRegion["source"] = "manual",
+): MaskRegion => ({
   id,
   pageIndex: 0,
   rect: { x: 0, y: 0, width: 10, height: 10 },
   category: "manual",
-  source: "manual",
+  source,
   enabled,
   matchedText: null,
 });
@@ -61,5 +65,60 @@ describe("appReducer", () => {
     const next = appReducer({ ...readyState, exportScale: 3 }, { type: "RESET" });
     expect(next.status).toBe("idle");
     expect(next.exportScale).toBe(3);
+  });
+
+  it("AI_DETECT_START で aiStatus が detecting になる", () => {
+    const next = appReducer(readyState, { type: "AI_DETECT_START" });
+    expect(next.aiStatus).toBe("detecting");
+    expect(next.masks).toEqual(readyState.masks);
+  });
+
+  it("AI_DETECT_SUCCESS は既存マスクを保持し、重複しない AI マスクのみ追加する", () => {
+    const state: AppState = {
+      ...readyState,
+      aiStatus: "detecting",
+      masks: [
+        mask("auto-0-0", false, "auto"), // OFF 操作した暫定マスクも保持される
+        mask("manual-1", true, "manual"),
+      ],
+    };
+    const next = appReducer(state, {
+      type: "AI_DETECT_SUCCESS",
+      masks: [
+        // 既存 auto-0-0 と同一矩形・同一ページ → 重複として捨てる
+        mask("ai-0-0", true, "auto"),
+        // 重ならない矩形 → 追加される
+        {
+          ...mask("ai-0-1", true, "auto"),
+          rect: { x: 100, y: 100, width: 10, height: 10 },
+        },
+        // 同一矩形でも別ページなら重複ではない → 追加される
+        { ...mask("ai-1-0", true, "auto"), pageIndex: 1 },
+      ],
+    });
+    expect(next.aiStatus).toBe("done");
+    expect(next.masks.map((m) => m.id)).toEqual([
+      "auto-0-0",
+      "manual-1",
+      "ai-0-1",
+      "ai-1-0",
+    ]);
+    // OFF 操作が引き継がれている
+    expect(next.masks.find((m) => m.id === "auto-0-0")?.enabled).toBe(false);
+  });
+
+  it("AI_DETECT_ERROR はマスクを変更せず aiStatus のみ更新する", () => {
+    const state: AppState = { ...readyState, aiStatus: "detecting" };
+    const next = appReducer(state, { type: "AI_DETECT_ERROR" });
+    expect(next.aiStatus).toBe("error");
+    expect(next.masks).toEqual(state.masks);
+  });
+
+  it("LOAD_START / RESET で aiStatus が idle に戻る", () => {
+    const state: AppState = { ...readyState, aiStatus: "done" };
+    expect(
+      appReducer(state, { type: "LOAD_START", fileName: "a.pdf" }).aiStatus,
+    ).toBe("idle");
+    expect(appReducer(state, { type: "RESET" }).aiStatus).toBe("idle");
   });
 });

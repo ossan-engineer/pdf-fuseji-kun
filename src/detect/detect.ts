@@ -6,10 +6,12 @@ import { detectByRegex } from "./detectByRegex";
 import { buildNormalizedLine, groupIntoLines } from "./lines";
 import { PATTERNS } from "./patterns";
 
-const DEDUPE_IOU_THRESHOLD = 0.7;
+export const DEDUPE_IOU_THRESHOLD = 0.7;
 
-// 重複矩形は先勝ち(ラベル検出を正規表現検出より優先)
-const dedupe = (detections: ReadonlyArray<Detection>): ReadonlyArray<Detection> =>
+// 重複矩形は先勝ち(ラベル検出を正規表現検出より優先)。AI 検出でも再利用する
+export const dedupeDetections = (
+  detections: ReadonlyArray<Detection>,
+): ReadonlyArray<Detection> =>
   detections.reduce<ReadonlyArray<Detection>>(
     (acc, d) =>
       acc.some((kept) => iou(kept.rect, d.rect) > DEDUPE_IOU_THRESHOLD)
@@ -30,7 +32,7 @@ export const detectAll = (
     const regexDetections = normalizedLines.flatMap((line) =>
       detectByRegex(line, page.texts, PATTERNS),
     );
-    return dedupe([...labelDetections, ...regexDetections]).map(
+    return dedupeDetections([...labelDetections, ...regexDetections]).map(
       (d, i): MaskRegion => ({
         id: `auto-${page.pageIndex}-${i}`,
         pageIndex: page.pageIndex,
