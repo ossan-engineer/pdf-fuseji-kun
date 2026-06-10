@@ -93,13 +93,16 @@ export const App = () => {
             : []),
         ];
         dispatch({ type: "LOAD_SUCCESS", pages: loaded.pages, masks, warnings });
+        if (hasText) {
+          startAiDetection(loaded.pages);
+        }
       } catch (e) {
         console.error("PDF読み込みエラー:", e);
         replaceDoc(null);
         dispatch({ type: "LOAD_ERROR", message: toErrorMessage(e) });
       }
     },
-    [replaceDoc],
+    [replaceDoc, abortAiDetection, startAiDetection],
   );
 
   const handleDownload = useCallback(async () => {
