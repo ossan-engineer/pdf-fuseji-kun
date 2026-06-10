@@ -73,6 +73,7 @@ export const App = () => {
 
   const handleFile = useCallback(
     async (file: File) => {
+      abortAiDetection();
       dispatch({ type: "LOAD_START", fileName: file.name });
       try {
         const loaded = await loadPdf(file);
