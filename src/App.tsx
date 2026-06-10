@@ -50,7 +50,7 @@ export const App = () => {
   // Chrome 内蔵 AI が使える場合のみ、ルールベースの暫定結果を表示したまま
   // バックグラウンドで AI 検出を実行し、完了次第 auto マスクを置き換える
   const startAiDetection = useCallback(
-    (pages: Awaited<ReturnType<typeof loadPdf>>["pages"]) => {
+    (pages: ReadonlyArray<PageData>) => {
       void (async () => {
         if (!(await isAiDetectionAvailable())) return; // サイレントフォールバック
         const controller = new AbortController();
