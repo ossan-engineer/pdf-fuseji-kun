@@ -17,6 +17,12 @@ export type AppAction =
   | Readonly<{ type: "GENERATE_START" }>
   | Readonly<{ type: "GENERATE_DONE" }>
   | Readonly<{ type: "GENERATE_ERROR"; message: string }>
+  | Readonly<{ type: "AI_DETECT_START" }>
+  | Readonly<{
+      type: "AI_DETECT_SUCCESS";
+      masks: ReadonlyArray<MaskRegion>;
+    }>
+  | Readonly<{ type: "AI_DETECT_ERROR" }>
   | Readonly<{ type: "RESET" }>;
 
 export const DEFAULT_EXPORT_SCALE = 2;
@@ -29,6 +35,7 @@ export const initialState: AppState = {
   exportScale: DEFAULT_EXPORT_SCALE,
   errorMessage: null,
   warnings: [],
+  aiStatus: "idle",
 };
 
 export const appReducer = (state: AppState, action: AppAction): AppState => {
@@ -75,6 +82,23 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, status: "ready" };
     case "GENERATE_ERROR":
       return { ...state, status: "ready", errorMessage: action.message };
+    case "AI_DETECT_START":
+      return { ...state, aiStatus: "detecting" };
+    case "AI_DETECT_SUCCESS":
+      // AI 結果で自動検出(source: "auto")を全置換する。暫定マスクへの
+      // ON/OFF 操作は新旧矩形の対応付けが曖昧なため引き継がない。
+      // 手動マスクはユーザーの明示操作なので必ず残す。
+      return {
+        ...state,
+        aiStatus: "done",
+        masks: [
+          ...state.masks.filter((m) => m.source === "manual"),
+          ...action.masks,
+        ],
+      };
+    case "AI_DETECT_ERROR":
+      // ルールベースの暫定マスクをそのまま維持する(サイレントフォールバック)
+      return { ...state, aiStatus: "error" };
     case "RESET":
       return { ...initialState, exportScale: state.exportScale };
   }
