@@ -18,7 +18,10 @@ body {
 .app {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 24px 16px 64px;
+  padding: 24px 16px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .app__header h1 {
@@ -30,6 +33,14 @@ body {
   margin: 0 0 24px;
   color: #52606d;
   font-size: 0.9rem;
+}
+
+/* コンテンツが短い画面でも常に最下部に張り付く(flex column + margin-top: auto) */
+.app__footer {
+  margin-top: auto;
+  padding-top: 48px;
+  text-align: center;
+  color: #7b8794;
 }
 
 /* --- DropZone --- */

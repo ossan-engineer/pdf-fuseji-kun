@@ -149,6 +149,9 @@ export const App = () => {
           </div>
         </>
       )}
+      <footer className="app__footer">
+        <small>© {new Date().getFullYear()} ossan-engineer</small>
+      </footer>
     </div>
   );
 };
