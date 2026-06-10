@@ -11,16 +11,18 @@ const HYPHEN_VARIANTS: ReadonlySet<string> = new Set([
   "ｰ",
   "〜",
   "～",
+  "~",
 ]);
 
 export const normalizeChar = (ch: string): string => {
   const code = ch.codePointAt(0) ?? 0;
-  // 全角英数記号(！〜～)→ 半角
+  // 全角チルダ(U+FF5E)を「~」にしないよう、ハイフン統一を先に判定する
+  if (HYPHEN_VARIANTS.has(ch)) return "-";
+  // 全角英数記号(！〜｝)→ 半角
   if (code >= 0xff01 && code <= 0xff5e) {
     return String.fromCodePoint(code - 0xfee0);
   }
   if (ch === "　") return " ";
-  if (HYPHEN_VARIANTS.has(ch)) return "-";
   return ch;
 };
 
