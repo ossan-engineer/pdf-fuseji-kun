@@ -1,5 +1,6 @@
 import { useCallback, useReducer, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
+import type { PageData } from "./types";
 import { DetectionList } from "./components/DetectionList";
 import { DropZone } from "./components/DropZone";
 import { PageView } from "./components/PageView";
