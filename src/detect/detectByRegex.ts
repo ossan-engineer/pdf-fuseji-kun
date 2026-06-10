@@ -23,6 +23,31 @@ const charRect = (item: PositionedText, charIndex: number): Rect => {
   };
 };
 
+// 一覧表示用に元の(正規化前の)テキストを復元する。
+// charMap は UTF-16 単位なのでサロゲートペア由来の連続重複を除く
+export const originalTextForRange = (
+  line: NormalizedLine,
+  texts: ReadonlyArray<PositionedText>,
+  start: number,
+  end: number,
+): string =>
+  line.charMap
+    .slice(start, end)
+    .filter(
+      (origin, i, arr) =>
+        i === 0 ||
+        origin === null ||
+        arr[i - 1] === null ||
+        origin.itemIndex !== arr[i - 1]?.itemIndex ||
+        origin.charIndex !== arr[i - 1]?.charIndex,
+    )
+    .map((origin) =>
+      origin === null
+        ? " "
+        : (Array.from(texts[origin.itemIndex].str)[origin.charIndex] ?? ""),
+    )
+    .join("");
+
 export const rectForCharRange = (
   line: NormalizedLine,
   texts: ReadonlyArray<PositionedText>,
@@ -54,7 +79,7 @@ export const detectByRegex = (
             {
               category: pattern.category,
               rect: padRect(rect, MASK_PADDING),
-              text: line.text.slice(start, end),
+              text: originalTextForRange(line, texts, start, end),
             },
           ]
         : [];
