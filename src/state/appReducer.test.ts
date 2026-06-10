@@ -2,12 +2,16 @@ import { describe, expect, it } from "vitest";
 import type { AppState, MaskRegion } from "../types";
 import { appReducer, initialState } from "./appReducer";
 
-const mask = (id: string, enabled = true): MaskRegion => ({
+const mask = (
+  id: string,
+  enabled = true,
+  source: MaskRegion["source"] = "manual",
+): MaskRegion => ({
   id,
   pageIndex: 0,
   rect: { x: 0, y: 0, width: 10, height: 10 },
   category: "manual",
-  source: "manual",
+  source,
   enabled,
   matchedText: null,
 });
@@ -61,5 +65,43 @@ describe("appReducer", () => {
     const next = appReducer({ ...readyState, exportScale: 3 }, { type: "RESET" });
     expect(next.status).toBe("idle");
     expect(next.exportScale).toBe(3);
+  });
+
+  it("AI_DETECT_START で aiStatus が detecting になる", () => {
+    const next = appReducer(readyState, { type: "AI_DETECT_START" });
+    expect(next.aiStatus).toBe("detecting");
+    expect(next.masks).toEqual(readyState.masks);
+  });
+
+  it("AI_DETECT_SUCCESS は auto マスクを置換し manual マスクを保持する", () => {
+    const state: AppState = {
+      ...readyState,
+      aiStatus: "detecting",
+      masks: [
+        mask("auto-0-0", false, "auto"), // OFF にした暫定マスクも置換される
+        mask("manual-1", true, "manual"),
+      ],
+    };
+    const next = appReducer(state, {
+      type: "AI_DETECT_SUCCESS",
+      masks: [mask("ai-0-0", true, "auto")],
+    });
+    expect(next.aiStatus).toBe("done");
+    expect(next.masks.map((m) => m.id)).toEqual(["manual-1", "ai-0-0"]);
+  });
+
+  it("AI_DETECT_ERROR はマスクを変更せず aiStatus のみ更新する", () => {
+    const state: AppState = { ...readyState, aiStatus: "detecting" };
+    const next = appReducer(state, { type: "AI_DETECT_ERROR" });
+    expect(next.aiStatus).toBe("error");
+    expect(next.masks).toEqual(state.masks);
+  });
+
+  it("LOAD_START / RESET で aiStatus が idle に戻る", () => {
+    const state: AppState = { ...readyState, aiStatus: "done" };
+    expect(
+      appReducer(state, { type: "LOAD_START", fileName: "a.pdf" }).aiStatus,
+    ).toBe("idle");
+    expect(appReducer(state, { type: "RESET" }).aiStatus).toBe("idle");
   });
 });
