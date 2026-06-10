@@ -1,4 +1,8 @@
-import { getDocument, Util, type PDFDocumentProxy } from "pdfjs-dist";
+import {
+  getDocument,
+  Util,
+  type PDFDocumentProxy,
+} from "pdfjs-dist/legacy/build/pdf.mjs";
 import "./pdfjsSetup";
 import type { PageData, PositionedText, TextDirection } from "../types";
 
