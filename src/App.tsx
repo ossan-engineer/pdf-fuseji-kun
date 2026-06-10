@@ -128,9 +128,10 @@ export const App = () => {
   }, [state.pages, state.masks, state.exportScale, state.fileName]);
 
   const handleReset = useCallback(() => {
+    abortAiDetection();
     replaceDoc(null);
     dispatch({ type: "RESET" });
-  }, [replaceDoc]);
+  }, [replaceDoc, abortAiDetection]);
 
   const showWorkspace =
     doc !== null && (state.status === "ready" || state.status === "generating");
@@ -168,6 +169,17 @@ export const App = () => {
               {warning}
             </p>
           ))}
+          {state.aiStatus === "detecting" && (
+            <p className="app__ai-status">
+              Chrome 内蔵 AI
+              で個人情報を検出中…(完了すると自動検出マスクが置き換わります)
+            </p>
+          )}
+          {state.aiStatus === "done" && (
+            <p className="app__ai-status">
+              Chrome 内蔵 AI の検出結果を適用しました。
+            </p>
+          )}
           {state.errorMessage !== null && (
             <p className="app__error">{state.errorMessage}</p>
           )}
