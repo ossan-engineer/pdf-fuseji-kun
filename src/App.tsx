@@ -98,7 +98,7 @@ export const App = () => {
     doc !== null && (state.status === "ready" || state.status === "generating");
 
   return (
-    <div className="app">
+    <div className={`app${selectionMode ? " app--selecting" : ""}`}>
       <header className="app__header">
         <h1>
           PDF伏せ字くん <span className="app__version">v{__APP_VERSION__}</span>
