@@ -64,7 +64,12 @@ export const PageView = ({
     <div
       ref={containerRef}
       className="page-view"
-      style={{ aspectRatio: `${page.width} / ${page.height}` }}
+      style={{
+        aspectRatio: `${page.width} / ${page.height}`,
+        // iOS WebKit は SVG への touch-action を尊重しないことがあるため、
+        // スクロール抑止は HTML 要素であるこのコンテナ側で行う
+        touchAction: selectionMode ? "none" : "auto",
+      }}
     >
       <canvas ref={canvasRef} className="page-view__canvas" />
       <MaskOverlay

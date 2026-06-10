@@ -1,4 +1,10 @@
-import { useRef, useState, type Dispatch, type PointerEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type PointerEvent,
+} from "react";
 import type { AppAction } from "../state/appReducer";
 import { CATEGORY_LABELS, type MaskRegion, type PageData } from "../types";
 import { rectFromPoints } from "../utils/geometry";
@@ -30,6 +36,17 @@ export const MaskOverlay = ({
 }: Props) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
+  const dragging = draft !== null;
+
+  // touch-action だけでは iOS でスクロールに横取りされ pointercancel で
+  // ドラフトが消えることがあるため、ドラッグ中は touchmove の既定動作を
+  // 非 passive リスナーで直接抑止する
+  useEffect(() => {
+    if (!dragging) return;
+    const prevent = (e: TouchEvent) => e.preventDefault();
+    document.addEventListener("touchmove", prevent, { passive: false });
+    return () => document.removeEventListener("touchmove", prevent);
+  }, [dragging]);
 
   const toPageCoords = (e: PointerEvent): readonly [number, number] => {
     const svg = svgRef.current;
