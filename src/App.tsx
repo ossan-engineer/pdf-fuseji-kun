@@ -39,6 +39,37 @@ export const App = () => {
     prev?.loadingTask.destroy().catch(() => undefined);
   }, []);
 
+  // AI 検出はバックグラウンドで走るため、リセットや別ファイル読み込み時に
+  // 古い結果が新しい state を汚染しないよう AbortController で打ち切る
+  const aiAbortRef = useRef<AbortController | null>(null);
+  const abortAiDetection = useCallback(() => {
+    aiAbortRef.current?.abort();
+    aiAbortRef.current = null;
+  }, []);
+
+  // Chrome 内蔵 AI が使える場合のみ、ルールベースの暫定結果を表示したまま
+  // バックグラウンドで AI 検出を実行し、完了次第 auto マスクを置き換える
+  const startAiDetection = useCallback(
+    (pages: Awaited<ReturnType<typeof loadPdf>>["pages"]) => {
+      void (async () => {
+        if (!(await isAiDetectionAvailable())) return; // サイレントフォールバック
+        const controller = new AbortController();
+        aiAbortRef.current = controller;
+        dispatch({ type: "AI_DETECT_START" });
+        try {
+          const aiMasks = await detectByAi(pages, controller.signal);
+          if (controller.signal.aborted) return; // 古い結果は捨てる
+          dispatch({ type: "AI_DETECT_SUCCESS", masks: aiMasks });
+        } catch (e) {
+          if (controller.signal.aborted) return;
+          console.warn("AI検出エラー(ルールベース結果を維持):", e);
+          dispatch({ type: "AI_DETECT_ERROR" });
+        }
+      })();
+    },
+    [],
+  );
+
   const handleFile = useCallback(
     async (file: File) => {
       dispatch({ type: "LOAD_START", fileName: file.name });
