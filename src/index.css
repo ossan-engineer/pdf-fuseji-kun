@@ -217,6 +217,17 @@ button:disabled {
   font-size: 0.9rem;
 }
 
+/* AI 検出の進行状態。警告と区別できる情報系トーン */
+.app__ai-status {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #dbeafe;
+  border: 1px solid #3b82f6;
+  color: #1e3a8a;
+  font-size: 0.9rem;
+}
+
 .app__hint {
   margin: 0 0 16px;
   color: #52606d;
