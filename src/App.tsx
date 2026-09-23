@@ -9,6 +9,7 @@ import { generateMaskedPdf } from "./pdf/generateMaskedPdf";
 import { loadPdf } from "./pdf/loadPdf";
 import { appReducer, initialState } from "./state/appReducer";
 import { downloadBlob } from "./utils/download";
+import { maskedFileName } from "./utils/fileName";
 
 const toErrorMessage = (e: unknown): string => {
   if (e instanceof Error && e.name === "PasswordException") {
@@ -78,7 +79,7 @@ export const App = () => {
         state.masks,
         state.exportScale,
       );
-      downloadBlob(blob, `伏せ字済み_${state.fileName ?? "document.pdf"}`);
+      downloadBlob(blob, maskedFileName(new Date()));
       dispatch({ type: "GENERATE_DONE" });
     } catch {
       dispatch({
@@ -87,7 +88,7 @@ export const App = () => {
           "PDF の生成に失敗しました。画質を「標準」にして再試行してください。",
       });
     }
-  }, [state.pages, state.masks, state.exportScale, state.fileName]);
+  }, [state.pages, state.masks, state.exportScale]);
 
   const handleReset = useCallback(() => {
     replaceDoc(null);
