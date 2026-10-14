@@ -47,17 +47,17 @@ pnpm build      # 型チェック + 本番ビルド(dist/ に静的成果物)
 
 - React 19 + Vite + TypeScript
 - [pdfjs-dist](https://github.com/mozilla/pdf.js)(Mozilla)— PDF レンダリング・テキスト座標抽出
-- [jspdf](https://github.com/parallax/jsPDF)(parallax)— 画像化 PDF の生成
+- [jspdf](https://github.com/parallax/jsPDF)(parallax)— 画像化 PDF の生成・入力画像の PDF 変換
 
 ## アーキテクチャ
 
 ```
 src/
 ├── detect/   # 個人情報検出(純粋関数のみ・DOM/pdf.js 非依存・テスト対象)
-├── pdf/      # pdf.js / jsPDF との境界(読み込み・描画・生成)
+├── pdf/      # pdf.js / jsPDF との境界(読み込み・描画・生成・画像の PDF 変換)
 ├── state/    # useReducer 用の純粋 reducer
 ├── components/  # DropZone / PageView / MaskOverlay / Toolbar / DetectionList
-└── utils/    # 矩形演算・ダウンロード
+└── utils/    # 矩形演算・ダウンロード・ファイル種類の判定・警告文
 ```
 
 座標系は全レイヤで「scale=1 の pdf.js viewport 座標(左上原点・pt)」に統一しています。
