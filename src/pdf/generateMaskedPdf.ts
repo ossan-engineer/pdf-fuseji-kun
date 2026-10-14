@@ -1,11 +1,10 @@
 import { jsPDF } from "jspdf";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import type { MaskRegion, PageData } from "../types";
+import { MAX_CANVAS_PIXELS } from "./canvasLimits";
 import { renderPageToCanvas } from "./renderPage";
 
 const JPEG_QUALITY = 0.85;
-// iOS Safari の canvas 面積上限の目安(4096×4096)。超える場合は scale を自動減衰
-const MAX_CANVAS_PIXELS = 16_777_216;
 
 const clampedScale = (page: PageData, scale: number): number => {
   const pixels = page.width * page.height * scale * scale;

@@ -44,8 +44,7 @@ const extractPage = async (
   return { pageIndex, width: viewport.width, height: viewport.height, texts };
 };
 
-export const loadPdf = async (file: File): Promise<LoadedPdf> => {
-  const data = await file.arrayBuffer();
+export const loadPdf = async (data: ArrayBuffer): Promise<LoadedPdf> => {
   const doc = await getDocument({ data }).promise;
   const pages = await Promise.all(
     Array.from({ length: doc.numPages }, (_, i) => extractPage(doc, i)),
