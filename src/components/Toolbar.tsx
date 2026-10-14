@@ -59,7 +59,7 @@ export const Toolbar = ({
         {generating ? "生成中…" : "マスク済みPDFをダウンロード"}
       </button>
       <button type="button" onClick={onReset}>
-        別のPDFを開く
+        別のファイルを開く
       </button>
     </div>
   </div>

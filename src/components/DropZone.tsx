@@ -1,13 +1,15 @@
 import { useRef, useState, type DragEvent } from "react";
+import {
+  ACCEPTED_FILE_TYPES,
+  detectFileKind,
+  type FileKind,
+} from "../utils/fileKind";
 
 type Props = Readonly<{
-  onFile: (file: File) => void;
+  onFile: (file: File, kind: FileKind) => void;
   loading: boolean;
   errorMessage: string | null;
 }>;
-
-const isPdf = (file: File): boolean =>
-  file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
 
 export const DropZone = ({ onFile, loading, errorMessage }: Props) => {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -16,12 +18,13 @@ export const DropZone = ({ onFile, loading, errorMessage }: Props) => {
 
   const accept = (file: File | undefined) => {
     if (file === undefined) return;
-    if (!isPdf(file)) {
+    const kind = detectFileKind(file);
+    if (kind === null) {
       setRejected(true);
       return;
     }
     setRejected(false);
-    onFile(file);
+    onFile(file, kind);
   };
 
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
@@ -49,7 +52,7 @@ export const DropZone = ({ onFile, loading, errorMessage }: Props) => {
       <input
         ref={inputRef}
         type="file"
-        accept="application/pdf,.pdf"
+        accept={ACCEPTED_FILE_TYPES}
         hidden
         onChange={(e) => {
           accept(e.target.files?.[0]);
@@ -61,13 +64,15 @@ export const DropZone = ({ onFile, loading, errorMessage }: Props) => {
       ) : (
         <>
           <p className="drop-zone__main">
-            ここに履歴書・職務経歴書の PDF をドロップ
+            ここに履歴書・職務経歴書の PDF・画像をドロップ
           </p>
-          <p className="drop-zone__sub">またはクリックしてファイルを選択</p>
+          <p className="drop-zone__sub">
+            またはクリックしてファイルを選択(PDF / JPG / PNG / GIF)
+          </p>
         </>
       )}
       {rejected && (
-        <p className="drop-zone__error">PDF ファイルを選択してください</p>
+        <p className="drop-zone__error">PDF または画像ファイル(JPG / PNG / GIF)を選択してください</p>
       )}
       {errorMessage !== null && (
         <p className="drop-zone__error">{errorMessage}</p>

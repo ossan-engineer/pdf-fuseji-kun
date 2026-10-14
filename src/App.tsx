@@ -6,10 +6,13 @@ import { PageView } from "./components/PageView";
 import { Toolbar } from "./components/Toolbar";
 import { detectAll } from "./detect/detect";
 import { generateMaskedPdf } from "./pdf/generateMaskedPdf";
+import { imageToPdf } from "./pdf/imageToPdf";
 import { loadPdf } from "./pdf/loadPdf";
 import { appReducer, initialState } from "./state/appReducer";
 import { downloadBlob } from "./utils/download";
+import type { FileKind } from "./utils/fileKind";
 import { maskedFileName } from "./utils/fileName";
+import { loadWarnings } from "./utils/loadWarnings";
 
 const toErrorMessage = (e: unknown): string => {
   if (e instanceof Error && e.name === "PasswordException") {
@@ -18,9 +21,12 @@ const toErrorMessage = (e: unknown): string => {
   if (e instanceof Error && e.name === "InvalidPDFException") {
     return "PDF として読み込めないファイルです。";
   }
+  if (e instanceof Error && e.name === "ImageDecodeError") {
+    return "画像として読み込めないファイルです。";
+  }
   // 原因調査ができるよう詳細を残す(個人情報は含まれない)
   const detail = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
-  return `PDF の処理中にエラーが発生しました。(詳細: ${detail})`;
+  return `ファイルの処理中にエラーが発生しました。(詳細: ${detail})`;
 };
 
 export const App = () => {
@@ -39,28 +45,23 @@ export const App = () => {
   }, []);
 
   const handleFile = useCallback(
-    async (file: File) => {
+    async (file: File, kind: FileKind) => {
       dispatch({ type: "LOAD_START", fileName: file.name });
       try {
-        const loaded = await loadPdf(file);
+        // 画像は 1 ページの PDF に変換し、以降は PDF と同じ経路で扱う
+        const data =
+          kind === "image" ? await imageToPdf(file) : await file.arrayBuffer();
+        const loaded = await loadPdf(data);
         replaceDoc(loaded.doc);
         const masks = detectAll(loaded.pages);
-        const hasText = loaded.pages.some((p) => p.texts.length > 0);
-        const warnings = [
-          ...(hasText
-            ? []
-            : [
-                "テキストを抽出できませんでした(スキャン画像の PDF の可能性があります)。自動検出は使えないため、プレビューをドラッグして手動でマスクしてください。",
-              ]),
-          ...(hasText && masks.length === 0
-            ? [
-                "個人情報を自動検出できませんでした。プレビューをドラッグして手動でマスクを追加してください。",
-              ]
-            : []),
-        ];
+        const warnings = loadWarnings({
+          kind,
+          hasText: loaded.pages.some((p) => p.texts.length > 0),
+          maskCount: masks.length,
+        });
         dispatch({ type: "LOAD_SUCCESS", pages: loaded.pages, masks, warnings });
       } catch (e) {
-        console.error("PDF読み込みエラー:", e);
+        console.error("ファイル読み込みエラー:", e);
         replaceDoc(null);
         dispatch({ type: "LOAD_ERROR", message: toErrorMessage(e) });
       }
@@ -105,7 +106,7 @@ export const App = () => {
           PDF伏せ字くん <span className="app__version">v{__APP_VERSION__}</span>
         </h1>
         <p>
-          履歴書・職務経歴書の個人情報を検出して黒塗りした PDF
+          履歴書・職務経歴書(PDF・画像)の個人情報を検出して黒塗りした PDF
           を作成します。処理はすべてブラウザ内で完結し、ファイルが外部に送信されることはありません。
         </p>
       </header>
